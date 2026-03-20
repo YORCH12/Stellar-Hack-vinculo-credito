@@ -52,7 +52,7 @@ const Perfil = () => {
         {/* Reputation card */}
         <div
           className={`card-elevated p-5 border-2 opacity-0 animate-fade-up ${
-            isUnlocked ? "border-emerald/20" : "border-transparent"
+            isUnlocked ? "border-primary/20" : "border-transparent"
           }`}
           style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
         >
