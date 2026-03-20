@@ -60,10 +60,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 relative overflow-hidden">
-      {/* Decorative gradient blob */}
-      <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full opacity-20 blur-3xl" style={{ background: "linear-gradient(135deg, hsl(255 72% 79%), hsl(160 55% 77%), hsl(197 100% 75%))" }} />
-      <div className="absolute -bottom-32 -left-32 w-64 h-64 rounded-full opacity-15 blur-3xl" style={{ background: "linear-gradient(135deg, hsl(197 100% 75%), hsl(160 55% 77%))" }} />
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
       {/* Brand */}
       <div className="mb-10 text-center">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
