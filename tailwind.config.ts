@@ -47,13 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        navy: {
-          DEFAULT: "hsl(var(--navy))",
-          light: "hsl(var(--navy-light))",
+        teal: {
+          DEFAULT: "hsl(var(--teal))",
+          light: "hsl(var(--teal-light))",
         },
-        emerald: {
-          DEFAULT: "hsl(var(--emerald))",
-          light: "hsl(var(--emerald-light))",
+        coral: {
+          DEFAULT: "hsl(var(--coral))",
+          light: "hsl(var(--coral-light))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

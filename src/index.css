@@ -2,39 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    --background: 216 30% 97%;
-    --foreground: 220 40% 10%;
+    --background: 40 33% 97%;
+    --foreground: 240 20% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 40% 10%;
+    --card-foreground: 240 20% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 40% 10%;
+    --popover-foreground: 240 20% 16%;
 
-    --primary: 220 60% 16%;
+    --primary: 174 58% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 216 20% 93%;
-    --secondary-foreground: 220 40% 10%;
+    --secondary: 40 25% 93%;
+    --secondary-foreground: 240 20% 16%;
 
-    --muted: 216 20% 93%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 40 20% 93%;
+    --muted-foreground: 240 8% 50%;
 
-    --accent: 160 60% 38%;
+    --accent: 8 76% 62%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 216 20% 90%;
-    --input: 216 20% 90%;
-    --ring: 220 60% 16%;
+    --border: 40 18% 89%;
+    --input: 40 18% 89%;
+    --ring: 174 58% 40%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -43,14 +43,14 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 174 58% 40%;
 
     /* Custom tokens */
-    --navy: 220 60% 16%;
-    --navy-light: 220 40% 24%;
-    --emerald: 160 60% 38%;
-    --emerald-light: 160 50% 48%;
-    --emerald-glow: 160 60% 38%;
+    --teal: 174 58% 40%;
+    --teal-light: 174 48% 50%;
+    --coral: 8 76% 62%;
+    --coral-light: 8 68% 70%;
+    --warm: 40 33% 97%;
     --surface-raised: 0 0% 100%;
   }
 }
@@ -62,7 +62,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Nunito', system-ui, sans-serif;
   }
 }
 
@@ -74,22 +74,22 @@
 
 @layer components {
   .card-elevated {
-    @apply bg-card rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06)];
+    @apply bg-card rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)];
   }
 
   .card-navy {
-    background: linear-gradient(135deg, hsl(var(--navy)) 0%, hsl(var(--navy-light)) 100%);
+    background: linear-gradient(135deg, hsl(var(--teal)) 0%, hsl(var(--teal-light)) 100%);
     @apply rounded-2xl text-white;
   }
 
   .btn-emerald {
-    background: linear-gradient(135deg, hsl(var(--emerald)) 0%, hsl(var(--emerald-light)) 100%);
-    @apply text-white font-semibold rounded-xl px-6 py-3 transition-all duration-200 active:scale-[0.97];
-    box-shadow: 0 2px 8px hsla(var(--emerald), 0.3);
+    background: linear-gradient(135deg, hsl(var(--coral)) 0%, hsl(var(--coral-light)) 100%);
+    @apply text-white font-bold rounded-2xl px-6 py-3 transition-all duration-200 active:scale-[0.97];
+    box-shadow: 0 4px 12px hsla(var(--coral), 0.3);
   }
 
   .btn-emerald:hover {
-    box-shadow: 0 4px 16px hsla(var(--emerald), 0.4);
+    box-shadow: 0 6px 20px hsla(var(--coral), 0.4);
   }
 
   .progress-ring {
@@ -97,6 +97,6 @@
   }
 
   .unlock-glow {
-    box-shadow: 0 0 24px hsla(var(--emerald), 0.25), 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 0 24px hsla(var(--teal), 0.25), 0 4px 12px rgba(0,0,0,0.06);
   }
 }

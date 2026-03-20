@@ -1,28 +1,31 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wallet, TrendingUp, CreditCard, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import onboardingSave from "@/assets/onboarding-save.png";
+import onboardingReputation from "@/assets/onboarding-reputation.png";
+import onboardingCredit from "@/assets/onboarding-credit.png";
 
 const steps = [
   {
-    icon: Wallet,
-    title: "Ahorra cada semana",
+    image: onboardingSave,
+    title: "Ahorra poquito a poquito 🐷",
     description:
-      "Deposita una parte de tus ganancias semanales en tu cuenta Vínculo. Cada depósito se registra de forma segura en la blockchain de Stellar.",
-    accent: "bg-accent/15 text-accent",
+      "Cada semana guardas una parte de lo que ganas. No importa si es poco — lo que cuenta es la constancia. ¡Tú puedes!",
+    bg: "from-teal-50 to-white",
   },
   {
-    icon: TrendingUp,
-    title: "Construye tu reputación",
+    image: onboardingReputation,
+    title: "Sube de nivel 🏆",
     description:
-      "Cada depósito constante sube tu nivel de reputación. Al completar 3 depósitos consecutivos alcanzas el Nivel Plata y demuestras que eres confiable.",
-    accent: "bg-primary/10 text-primary",
+      "Con 3 depósitos seguidos alcanzas el Nivel Plata. Así demuestras que eres de fiar y te abres puertas a cosas increíbles.",
+    bg: "from-orange-50 to-white",
   },
   {
-    icon: CreditCard,
-    title: "Desbloquea tu crédito",
+    image: onboardingCredit,
+    title: "¡Recibe tu crédito! 🎉",
     description:
-      "Al alcanzar el Nivel Plata se te otorga un microcrédito de hasta 300 XLM. Sin papeleo, sin filas, directo a tu wallet.",
-    accent: "bg-emerald-500/15 text-emerald-600",
+      "Al llegar a Nivel Plata desbloqueas hasta 300 XLM de crédito. Sin papeleo, sin filas — directo a tu celular.",
+    bg: "from-rose-50 to-white",
   },
 ];
 
@@ -31,7 +34,6 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const isLast = current === steps.length - 1;
   const step = steps[current];
-  const Icon = step.icon;
 
   const next = () => {
     if (isLast) {
@@ -48,53 +50,55 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col items-center justify-between px-6 py-10 text-primary-foreground overflow-hidden">
+    <div
+      className={`min-h-screen bg-gradient-to-b ${step.bg} flex flex-col items-center justify-between px-6 py-8 overflow-hidden transition-colors duration-500`}
+    >
       {/* Skip */}
       <div className="w-full flex justify-end">
         {!isLast && (
           <button
             onClick={skip}
-            className="text-sm font-medium text-primary-foreground/60 hover:text-primary-foreground/90 transition-colors active:scale-95"
+            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors active:scale-95"
           >
             Omitir
           </button>
         )}
       </div>
 
-      {/* Illustration area */}
+      {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center max-w-sm w-full">
         <div
           key={current}
           className="flex flex-col items-center text-center opacity-0 animate-fade-up"
           style={{ animationFillMode: "forwards" }}
         >
-          {/* Icon bubble */}
-          <div
-            className={`w-28 h-28 rounded-3xl ${step.accent} flex items-center justify-center mb-10 shadow-lg`}
-          >
-            <Icon className="w-14 h-14" strokeWidth={1.5} />
-          </div>
+          {/* Illustration */}
+          <img
+            src={step.image}
+            alt={step.title}
+            className="w-56 h-56 object-contain mb-8 drop-shadow-lg"
+          />
 
-          <h2 className="text-2xl font-bold tracking-tight mb-4 text-balance leading-tight">
+          <h2 className="text-2xl font-extrabold tracking-tight text-foreground mb-3 text-balance leading-snug">
             {step.title}
           </h2>
-          <p className="text-base text-primary-foreground/70 leading-relaxed text-pretty">
+          <p className="text-base text-muted-foreground leading-relaxed text-pretty">
             {step.description}
           </p>
         </div>
       </div>
 
       {/* Bottom controls */}
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm space-y-5">
         {/* Dots */}
         <div className="flex items-center justify-center gap-2">
           {steps.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-2 rounded-full transition-all duration-300 ${
                 i === current
-                  ? "w-6 bg-accent"
-                  : "w-1.5 bg-primary-foreground/25"
+                  ? "w-7 bg-accent"
+                  : "w-2 bg-foreground/15"
               }`}
             />
           ))}
@@ -108,7 +112,7 @@ const Onboarding = () => {
           {isLast ? (
             <>
               <Sparkles className="w-5 h-5" />
-              Comenzar
+              ¡Vamos allá!
             </>
           ) : (
             <>
