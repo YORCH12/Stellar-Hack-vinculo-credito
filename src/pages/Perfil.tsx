@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Wallet, Star, ChevronRight, LogOut, HelpCircle, Bell, Pencil, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import WalletSetupModal from "@/components/WalletSetupModal";
+import logoVin from "@/assets/logo-vin.png";
 
 const Perfil = () => {
+  const navigate = useNavigate();
   const { balance, depositsCount, requiredDeposits, isUnlocked, creditWithdrawn } = useApp();
   const { user, signOut } = useAuth();
   const level = isUnlocked ? "Plata" : "Bronce";
@@ -38,14 +41,15 @@ const Perfil = () => {
     addr.length > 12 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
 
   const menuItems = [
-    { icon: Bell, label: "Notificaciones", detail: "Activadas" },
-    { icon: HelpCircle, label: "Centro de ayuda", detail: "" },
+    { icon: Bell, label: "Notificaciones", detail: "Activadas", action: () => navigate("/notificaciones") },
+    { icon: HelpCircle, label: "Centro de ayuda", detail: "", action: () => navigate("/ayuda") },
     { icon: LogOut, label: "Cerrar sesión", detail: "", destructive: true, action: signOut },
   ];
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
+      <header className="px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-2 flex items-center gap-3">
+        <img src={logoVin} alt="Vin" className="w-7 h-7 object-contain" />
         <h1 className="text-xl font-bold text-foreground tracking-tight">Perfil</h1>
       </header>
 
@@ -163,7 +167,7 @@ const Perfil = () => {
           ))}
         </div>
 
-        <p className="text-center text-[10px] text-muted-foreground pt-2 pb-4">Vínculo v1.0 · Stellar Network</p>
+        <p className="text-center text-[10px] text-muted-foreground pt-2 pb-4">Vin v1.0 · Stellar Network</p>
       </main>
 
       {showWalletModal && (

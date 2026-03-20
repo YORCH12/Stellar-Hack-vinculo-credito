@@ -13,6 +13,8 @@ import Historial from "./pages/Historial.tsx";
 import Perfil from "./pages/Perfil.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
 import Login from "./pages/Login.tsx";
+import Notificaciones from "./pages/Notificaciones.tsx";
+import Ayuda from "./pages/Ayuda.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -83,6 +85,8 @@ const App = () => (
               <Route path="/" element={<RequireAuth><RequireOnboarding><Index /></RequireOnboarding></RequireAuth>} />
               <Route path="/historial" element={<RequireAuth><RequireOnboarding><Historial /></RequireOnboarding></RequireAuth>} />
               <Route path="/perfil" element={<RequireAuth><RequireOnboarding><Perfil /></RequireOnboarding></RequireAuth>} />
+              <Route path="/notificaciones" element={<RequireAuth><RequireOnboarding><Notificaciones /></RequireOnboarding></RequireAuth>} />
+              <Route path="/ayuda" element={<RequireAuth><RequireOnboarding><Ayuda /></RequireOnboarding></RequireAuth>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

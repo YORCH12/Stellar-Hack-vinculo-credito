@@ -72,13 +72,11 @@ const Onboarding = () => {
           className="flex flex-col items-center text-center opacity-0 animate-fade-up"
           style={{ animationFillMode: "forwards" }}
         >
-          {/* Illustration */}
           <img
             src={step.image}
             alt={step.title}
             className="w-56 h-56 object-contain mb-8 drop-shadow-lg"
           />
-
           <h2 className="text-2xl font-extrabold tracking-tight text-foreground mb-3 text-balance leading-snug">
             {step.title}
           </h2>
