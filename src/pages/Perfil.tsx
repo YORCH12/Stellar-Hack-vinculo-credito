@@ -68,7 +68,7 @@ const Perfil = () => {
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{depositsCount} de {requiredDeposits} depósitos</span>
-            <span className={isUnlocked ? "text-emerald font-semibold" : ""}>{isUnlocked ? "✓ Desbloqueado" : "En progreso"}</span>
+            <span className={isUnlocked ? "text-primary font-semibold" : ""}>{isUnlocked ? "✓ Desbloqueado" : "En progreso"}</span>
           </div>
           {creditWithdrawn && (
             <div className="mt-3 bg-emerald/10 rounded-lg p-3">
