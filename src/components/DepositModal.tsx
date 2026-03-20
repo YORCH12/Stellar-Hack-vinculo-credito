@@ -3,13 +3,14 @@ import { X, Fingerprint, CheckCircle2, AlertCircle, ExternalLink } from "lucide-
 import { useApp } from "@/context/AppContext";
 import { isConnected, requestAccess, signTransaction } from "@stellar/freighter-api";
 import confetti from "canvas-confetti";
+import { Horizon, TransactionBuilder, Networks, Operation, Asset, BASE_FEE } from "@stellar/stellar-sdk";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-const DESTINATION_ADDRESS = "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOBER3HEDSW2BKQ"; // Replace with your deposit address
+const DESTINATION_ADDRESS = "GBS6IRXJN5N4D7KOAFD6ZGUYO4RFYEY6Q2ZZTGQDSWNDAGBFGOJVYVFE"; // Reemplaza con tu dirección de depósito real
 
 const DepositModal = ({ open, onClose }: Props) => {
   const { addDeposit, depositsCount, requiredDeposits, isUnlocked, setShowUnlockCelebration } = useApp();
@@ -40,7 +41,7 @@ const DepositModal = ({ open, onClose }: Props) => {
     setErrorMsg("");
 
     try {
-      // 1. Check if Freighter is installed
+      // 1. Verificar si Freighter está instalado
       const connected = await isConnected();
       if (!connected) {
         setErrorMsg("Freighter no está instalado. Descárgalo en freighter.app");
@@ -48,7 +49,7 @@ const DepositModal = ({ open, onClose }: Props) => {
         return;
       }
 
-      // 2. Request access to get the public key
+      // 2. Solicitar acceso para obtener la llave pública
       const accessResult = await requestAccess();
       if (accessResult.error || !accessResult.address) {
         setErrorMsg("Conexión con Freighter rechazada. Intenta de nuevo.");
@@ -58,47 +59,47 @@ const DepositModal = ({ open, onClose }: Props) => {
 
       const sourcePublicKey = accessResult.address;
 
-      // 3. Build the transaction XDR via Stellar Horizon
-      const horizonUrl = "https://horizon-testnet.stellar.org";
-      const accountRes = await fetch(`${horizonUrl}/accounts/${sourcePublicKey}`);
+      // 3. Conectar a Horizon Testnet y cargar la cuenta
+      const server = new Horizon.Server("https://horizon-testnet.stellar.org");
+      const account = await server.loadAccount(sourcePublicKey).catch(() => null);
       
-      if (!accountRes.ok) {
-        setErrorMsg("No se encontró tu cuenta en Stellar. Asegúrate de tener fondos.");
+      if (!account) {
+        setErrorMsg("No se encontró tu cuenta en Stellar. Asegúrate de tener fondos en la Testnet.");
         setStep("error");
         return;
       }
 
-      const account = await accountRes.json();
-      const sequence = BigInt(account.sequence) + 1n;
-      const fee = "100";
+      // 4. Construir la transacción con el SDK de Stellar
+      const transaction = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: Networks.TESTNET,
+      })
+        .addOperation(
+          Operation.payment({
+            destination: DESTINATION_ADDRESS,
+            asset: Asset.native(), // XLM
+            amount: String(val), // El monto debe pasarse como string
+          })
+        )
+        .setTimeout(30) // Tiempo de expiración de la transacción (requerido)
+        .build();
 
-      // Build a simple payment transaction XDR using Horizon's transaction builder
-      const txRes = await fetch(`${horizonUrl}/transactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `sourceAccount=${sourcePublicKey}&sequenceNumber=${sequence}&fee=${fee}`,
+      // Convertir la transacción a formato XDR
+      const xdr = transaction.toXDR();
+
+      // 5. Solicitar a Freighter que firme el XDR
+      const signResult = await signTransaction(xdr, {
+        networkPassphrase: Networks.TESTNET,
       });
 
-      // For now, we'll use the Stellar SDK approach via XDR
-      // Since we don't have the full SDK, we'll request the signature directly
-      // and simulate the deposit on success
-
-      // 4. Sign with Freighter - we'll create a minimal XDR envelope
-      // In production, this would be a proper transaction built server-side
-      const signResult = await signTransaction(
-        // Minimal transaction XDR for testnet payment
-        buildPaymentXDR(sourcePublicKey, DESTINATION_ADDRESS, String(val), account.sequence),
-        { networkPassphrase: "Test SDF Network ; September 2015" }
-      );
-
-      if (signResult.error) {
+      if (signResult.error || !signResult.signedTxXdr) {
         setErrorMsg("Firma rechazada en Freighter. Intenta de nuevo.");
         setStep("error");
         return;
       }
 
-      // 5. Submit the signed transaction
-      const submitRes = await fetch(`${horizonUrl}/transactions`, {
+      // 6. Enviar la transacción firmada a la red de Stellar
+      const submitRes = await fetch("https://horizon-testnet.stellar.org/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `tx=${encodeURIComponent(signResult.signedTxXdr)}`,
@@ -107,30 +108,28 @@ const DepositModal = ({ open, onClose }: Props) => {
       if (submitRes.ok) {
         const submitData = await submitRes.json();
         setTxHash(submitData.hash || "");
+        
+        // 7. Registrar el depósito localmente en la app
+        const wasLocked = !isUnlocked;
+        const willUnlock = depositsCount + 1 >= requiredDeposits;
+        addDeposit(val);
+        setStep("success");
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.65 } });
+
+        if (wasLocked && willUnlock) {
+          setTimeout(() => setShowUnlockCelebration(true), 800);
+        }
+      } else {
+        const errorData = await submitRes.json();
+        console.error("Error en Horizon:", errorData);
+        setErrorMsg("La transacción falló en la red de Stellar.");
+        setStep("error");
       }
 
-      // 6. Record the deposit locally
-      const wasLocked = !isUnlocked;
-      const willUnlock = depositsCount + 1 >= requiredDeposits;
-      addDeposit(val);
-      setStep("success");
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.65 } });
-
-      if (wasLocked && willUnlock) {
-        setTimeout(() => setShowUnlockCelebration(true), 800);
-      }
     } catch (err) {
       console.error("Deposit error:", err);
-      // Even if the blockchain tx fails, we allow the demo deposit
-      const wasLocked = !isUnlocked;
-      const willUnlock = depositsCount + 1 >= requiredDeposits;
-      addDeposit(parseFloat(amount));
-      setStep("success");
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.65 } });
-
-      if (wasLocked && willUnlock) {
-        setTimeout(() => setShowUnlockCelebration(true), 800);
-      }
+      setErrorMsg("Ocurrió un error inesperado al procesar la transacción.");
+      setStep("error");
     }
   };
 
@@ -276,22 +275,4 @@ const DepositModal = ({ open, onClose }: Props) => {
     </div>
   );
 };
-
-// Helper: build a minimal XDR for a payment operation
-// In production, build this server-side with the Stellar SDK
-function buildPaymentXDR(
-  source: string,
-  destination: string,
-  amount: string,
-  currentSequence: string
-): string {
-  // This is a placeholder — in a real app you'd use @stellar/stellar-sdk
-  // to build a proper TransactionBuilder XDR.
-  // For the Freighter signing flow, we need a valid XDR envelope.
-  // Since we can't import the full SDK in the browser easily,
-  // we'll return an empty string which will cause signTransaction to fail
-  // gracefully, and the catch block will handle the demo flow.
-  return "";
-}
-
 export default DepositModal;
