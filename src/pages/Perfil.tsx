@@ -57,7 +57,7 @@ const Perfil = () => {
           style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Shield className="w-4 h-4 text-emerald" />
+            <Shield className="w-4 h-4 text-primary" />
             <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Estado de Reputación</span>
           </div>
           <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-2">
