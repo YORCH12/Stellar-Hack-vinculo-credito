@@ -51,7 +51,7 @@ const DepositModal = ({ open, onClose }: Props) => {
         {done ? (
           <div className="flex flex-col items-center py-8 animate-scale-up">
             <svg viewBox="0 0 52 52" className="w-16 h-16 mb-4">
-              <circle cx="26" cy="26" r="25" fill="hsl(var(--emerald))" />
+              <circle cx="26" cy="26" r="25" fill="hsl(var(--primary))" />
               <path
                 fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
                 d="M14 27l7 7 16-16"
