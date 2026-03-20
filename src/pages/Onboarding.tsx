@@ -11,7 +11,7 @@ const steps = [
     title: "Ahorra poquito a poquito 🐷",
     description:
       "Cada semana guardas una parte de lo que ganas. No importa si es poco — lo que cuenta es la constancia. ¡Tú puedes!",
-    bg: "from-teal-50 to-white",
+    bg: "from-blue-50 to-white",
   },
   {
     image: onboardingReputation,
