@@ -1,8 +1,9 @@
-import { Home, Clock, User } from "lucide-react";
+import { Home, Clock, ArrowDownToLine, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const tabs = [
   { icon: Home, label: "Inicio", id: "/" },
+  { icon: ArrowDownToLine, label: "Retiros", id: "/retiros" },
   { icon: Clock, label: "Historial", id: "/historial" },
   { icon: User, label: "Perfil", id: "/perfil" },
 ];
