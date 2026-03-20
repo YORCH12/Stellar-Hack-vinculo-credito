@@ -1,5 +1,6 @@
 import { useApp } from "@/context/AppContext";
 import { Shield } from "lucide-react";
+import piggyImg from "@/assets/piggy-saving.png";
 
 const ProgressRing = () => {
   const { depositsCount, requiredDeposits, isUnlocked } = useApp();
@@ -16,7 +17,7 @@ const ProgressRing = () => {
             <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(var(--border))" strokeWidth="6" />
             <circle
               cx="50" cy="50" r={radius} fill="none"
-              stroke={isUnlocked ? "hsl(var(--teal))" : "hsl(var(--coral))"}
+              stroke={isUnlocked ? "hsl(var(--mint))" : "hsl(var(--purple))"}
               strokeWidth="6" strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
@@ -42,6 +43,11 @@ const ProgressRing = () => {
           </p>
         </div>
       </div>
+      {!isUnlocked && depositsCount === 0 && (
+        <div className="flex justify-center mt-3">
+          <img src={piggyImg} alt="Alcancía" className="w-20 h-20 opacity-60" />
+        </div>
+      )}
     </div>
   );
 };

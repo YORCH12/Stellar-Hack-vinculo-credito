@@ -1,5 +1,6 @@
 import { useApp } from "@/context/AppContext";
-import { ArrowUpRight, PiggyBank } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import emptyImg from "@/assets/empty-state.png";
 
 const ActivityList = () => {
   const { deposits } = useApp();
@@ -7,9 +8,7 @@ const ActivityList = () => {
   if (deposits.length === 0) {
     return (
       <div className="card-elevated p-8 flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-3">
-          <PiggyBank className="w-7 h-7 text-muted-foreground" />
-        </div>
+        <img src={emptyImg} alt="Sin actividad" className="w-28 h-28 mb-3" />
         <p className="text-sm font-bold text-foreground mb-0.5">Sin actividad aún</p>
         <p className="text-xs text-muted-foreground">Realiza tu primer depósito para comenzar</p>
       </div>

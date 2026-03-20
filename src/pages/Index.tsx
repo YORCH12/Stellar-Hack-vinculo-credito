@@ -14,23 +14,26 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      {/* Gradient header bar */}
+      <div className="h-40 card-gradient rounded-b-[2rem] -mb-16" />
+
       {/* Header */}
-      <header className="px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3 flex items-center justify-between">
+      <header className="px-5 -mt-24 pb-3 flex items-center justify-between relative z-10">
         <div>
-          <h1 className="text-xl font-extrabold text-foreground tracking-tight">Vínculo</h1>
-          <p className="text-xs text-muted-foreground">Tu camino al crédito 💪</p>
+          <h1 className="text-xl font-extrabold text-white tracking-tight">Vínculo</h1>
+          <p className="text-xs text-white/70">Tu camino al crédito 💪</p>
         </div>
         <button
           onClick={simulateWeek}
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-secondary rounded-full px-3 py-1.5 active:scale-95 transition-all hover:bg-secondary/80"
+          className="flex items-center gap-1.5 text-xs font-medium text-white/80 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 active:scale-95 transition-all hover:bg-white/30"
         >
           <FastForward className="w-3.5 h-3.5" />
-          Simular 1 Semana
+          Simular
         </button>
       </header>
 
       {/* Content */}
-      <main className="px-5 space-y-4 max-w-md mx-auto">
+      <main className="px-5 space-y-4 max-w-md mx-auto mt-6">
         {/* Mi Ahorro */}
         <section className="space-y-4 opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
           <BalanceCard />

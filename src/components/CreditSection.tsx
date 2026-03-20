@@ -2,6 +2,7 @@ import { Lock, Sparkles, ArrowDownToLine } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useState } from "react";
 import confetti from "canvas-confetti";
+import celebrationImg from "@/assets/celebration.png";
 
 const CreditSection = () => {
   const { isUnlocked, creditAmount, creditWithdrawn, withdrawCredit, showUnlockCelebration, setShowUnlockCelebration } = useApp();
@@ -25,8 +26,8 @@ const CreditSection = () => {
       <div className="card-elevated p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-secondary/60 backdrop-blur-[1px]" />
         <div className="relative flex flex-col items-center text-center py-4">
-          <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-            <Lock className="w-5 h-5 text-muted-foreground" />
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <Lock className="w-5 h-5 text-primary" />
           </div>
           <p className="text-sm font-bold text-foreground mb-1">Crédito Bloqueado 🔒</p>
           <p className="text-sm text-muted-foreground max-w-[260px]">
@@ -46,14 +47,16 @@ const CreditSection = () => {
 
       {creditWithdrawn ? (
         <div className="py-4 text-center">
+          <img src={celebrationImg} alt="Celebración" className="w-24 h-24 mx-auto mb-2" />
           <p className="text-lg font-bold text-foreground">Crédito Retirado ✅</p>
           <p className="text-sm text-muted-foreground mt-1">{creditAmount} XLM transferidos a tu wallet</p>
         </div>
       ) : (
         <>
           {showUnlockCelebration && (
-            <div className="bg-primary/10 rounded-xl p-3 mb-4 mt-2">
-              <p className="text-sm font-bold text-primary text-center">
+            <div className="bg-primary/10 rounded-xl p-3 mb-4 mt-2 flex items-center gap-3">
+              <img src={celebrationImg} alt="Celebración" className="w-12 h-12" />
+              <p className="text-sm font-bold text-primary">
                 🎉 ¡Nivel Plata Alcanzado! Tienes un crédito disponible
               </p>
             </div>
@@ -66,7 +69,7 @@ const CreditSection = () => {
           <button
             onClick={handleWithdraw}
             disabled={withdrawing}
-            className="btn-emerald w-full flex items-center justify-center gap-2 py-4 text-base animate-pulse-emerald disabled:animate-none disabled:opacity-60"
+            className="btn-emerald w-full flex items-center justify-center gap-2 py-4 text-base animate-pulse-brand disabled:animate-none disabled:opacity-60"
           >
             {withdrawing ? (
               <span className="flex items-center gap-2">

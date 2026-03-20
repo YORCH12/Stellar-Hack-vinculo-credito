@@ -1,6 +1,7 @@
 import { useApp } from "@/context/AppContext";
-import { ArrowUpRight, PiggyBank, ArrowDownToLine, Calendar } from "lucide-react";
+import { ArrowUpRight, ArrowDownToLine, Calendar } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import emptyImg from "@/assets/empty-state.png";
 
 const Historial = () => {
   const { deposits, creditWithdrawn, creditAmount } = useApp();
@@ -26,7 +27,6 @@ const Historial = () => {
       : []),
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  // Group by month
   const grouped = allTransactions.reduce<Record<string, typeof allTransactions>>((acc, tx) => {
     const key = tx.date.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
     if (!acc[key]) acc[key] = [];
@@ -44,9 +44,7 @@ const Historial = () => {
       <main className="px-5 max-w-md mx-auto">
         {allTransactions.length === 0 ? (
           <div className="card-elevated p-10 flex flex-col items-center text-center opacity-0 animate-fade-up" style={{ animationFillMode: "forwards" }}>
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-3">
-              <PiggyBank className="w-7 h-7 text-muted-foreground" />
-            </div>
+            <img src={emptyImg} alt="Sin transacciones" className="w-28 h-28 mb-3" />
             <p className="text-sm font-semibold text-foreground mb-0.5">Sin transacciones</p>
             <p className="text-xs text-muted-foreground">Tus depósitos y retiros aparecerán aquí</p>
           </div>
@@ -97,7 +95,6 @@ const Historial = () => {
           </div>
         )}
 
-        {/* Summary card */}
         {allTransactions.length > 0 && (
           <div className="card-navy p-5 mt-6 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
             <p className="text-xs font-semibold tracking-wide uppercase opacity-60 mb-3">Resumen</p>
