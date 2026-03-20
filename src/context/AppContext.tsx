@@ -7,6 +7,13 @@ export interface Deposit {
   label: string;
 }
 
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  date: Date;
+  txHash: string;
+}
+
 interface AppState {
   balance: number;
   deposits: Deposit[];
@@ -15,12 +22,14 @@ interface AppState {
   isUnlocked: boolean;
   creditAmount: number;
   creditWithdrawn: boolean;
+  withdrawals: Withdrawal[];
 }
 
 interface AppContextType extends AppState {
   addDeposit: (amount: number) => void;
   simulateWeek: () => void;
   withdrawCredit: () => void;
+  addWithdrawal: (amount: number, txHash: string) => void;
   showSuccess: boolean;
   setShowSuccess: (v: boolean) => void;
   showUnlockCelebration: boolean;
