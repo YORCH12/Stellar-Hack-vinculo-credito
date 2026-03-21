@@ -206,7 +206,7 @@ const Retiros = () => {
                   <TrendingUp className="w-3.5 h-3.5 text-accent opacity-60 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <p className="text-xl font-extrabold text-accent">{opt.apy}%</p>
-                <p className="text-[10px] text-muted-foreground">APY estimado</p>
+                <p className="text-[10px] text-muted-foreground">APY</p>
               </button>
             ))}
           </div>
