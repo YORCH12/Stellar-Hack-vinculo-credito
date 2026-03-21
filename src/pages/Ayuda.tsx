@@ -53,7 +53,7 @@ const Ayuda = () => {
             Revisa las preguntas frecuentes o contáctanos directamente.
           </p>
           <a
-            href="mailto:soporte@vin.app"
+            href="mailto:soporte@vyn.app"
             className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline active:scale-[0.97] transition-transform"
           >
             <MessageCircle className="w-4 h-4" />
