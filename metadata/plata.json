@@ -4,7 +4,7 @@
   "image": "https://tudominio.com/imagenes/plata.png",
   "attributes": [
     { "trait_type": "Nivel", "value": "Plata" },
-    { "trait_type": "Beneficio de Crédito", "value": "   XLM" },
+    { "trait_type": "Beneficio de Crédito", "value": " 300 XLM" },
     { "trait_type": "Plataforma", "value": "Vínculo" }
   ]
 }

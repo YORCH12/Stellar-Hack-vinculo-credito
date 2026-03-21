@@ -4,7 +4,7 @@ require("dotenv").config();
 const { Keypair, rpc, TransactionBuilder, Networks, Operation, BASE_FEE, nativeToScVal } = require("@stellar/stellar-sdk");
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Asegúrate de saber qué puerto se usa aquí
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -55,19 +55,20 @@ function computeScoreAndTier(wMean, mad, n) {
 // ─────────────────────────────────────────────
 async function mintNftOnChain(userAddress, tier) {
   try {
+    console.log(`\n[NFT] 1️⃣ Iniciando proceso para Nivel ${tier} a ${userAddress}...`);
+    
     const adminKeypair = Keypair.fromSecret(process.env.SECRET_KEY_ADMIN);
-    const adminPublicKey = adminKeypair.publicKey();
-    const account = await server.getAccount(adminPublicKey);
-
-    console.log(`[NFT] Firmando transacción para mintear Nivel ${tier} a ${userAddress}`);
-
+    console.log("[NFT] 2️⃣ Obteniendo cuenta Admin de la blockchain...");
+    const account = await server.getAccount(adminKeypair.publicKey());
+    
+    console.log("[NFT] 3️⃣ Armando operación...");
     let transaction = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
       .addOperation(
         Operation.invokeContractFunction({
           contract: process.env.NFT_CONTRACT_ID,
           function: "mint", 
           args: [
-            nativeToScVal(adminPublicKey, { type: "address" }), // Quien autoriza
+            nativeToScVal(adminKeypair.publicKey(), { type: "address" }), // Quien autoriza
             nativeToScVal(userAddress, { type: "address" }),    // Quien recibe
             nativeToScVal(tier, { type: "u32" })                // El nivel
           ],
@@ -75,28 +76,47 @@ async function mintNftOnChain(userAddress, tier) {
       )
       .setTimeout(30).build();
 
+    console.log("[NFT] 4️⃣ Simulando transacción en Soroban (prepareTransaction)...");
     transaction = await server.prepareTransaction(transaction);
+
+    console.log("[NFT] 5️⃣ Transacción simulada OK. Firmando con llave maestra...");
     transaction.sign(adminKeypair);
 
+    console.log("[NFT] 6️⃣ Enviando a la red Stellar...");
     const submitRes = await server.sendTransaction(transaction);
-    if (submitRes.status !== "PENDING" && submitRes.status !== "SUCCESS") throw new Error("Transacción rechazada");
+    console.log(`[NFT] 7️⃣ Respuesta de la red: ${submitRes.status}`);
+
+    if (submitRes.status === "ERROR" || submitRes.status === "FAILED") {
+      console.error("[NFT] ❌ Error de Soroban:", JSON.stringify(submitRes.errorResult, null, 2));
+      throw new Error("Transacción rechazada por el Smart Contract.");
+    }
 
     let txStatus = submitRes.status;
     let getTxRes;
-    while (txStatus === "PENDING" || txStatus === "NOT_FOUND") {
+    let intentos = 0; // 🚀 Evitamos el bucle infinito
+
+    // Esperamos máximo 30 segundos (15 intentos x 2s)
+    while ((txStatus === "PENDING" || txStatus === "NOT_FOUND") && intentos < 15) {
+      console.log(`[NFT] ⏳ Esperando confirmación de la blockchain... (Intento ${intentos + 1}/15)`);
       await new Promise(resolve => setTimeout(resolve, 2000));
       getTxRes = await server.getTransaction(submitRes.hash);
       txStatus = getTxRes.status.toUpperCase();
+      intentos++;
     }
 
-    if (txStatus === "SUCCESS") return { success: true, hash: submitRes.hash };
-    throw new Error("Fallo en la ejecución del Smart Contract");
+    if (txStatus === "SUCCESS") {
+      console.log(`[NFT] ✅ ¡ÉXITO TOTAL! Hash: ${submitRes.hash}\n`);
+      return { success: true, hash: submitRes.hash };
+    } else {
+      console.error(`[NFT] ❌ Falló o Caducó. Estado final: ${txStatus}\n`);
+      throw new Error(`La red devolvió estado: ${txStatus}`);
+    }
 
   } catch (error) {
-    console.error("[NFT ERROR]", error);
+    console.error("❌ [NFT ERROR CRÍTICO]", error?.response?.data || error.message);
     return { success: false, error: error.message };
   }
-}
+} // 👈 AQUÍ FALTABA ESTA LLAVE DE CIERRE.
 
 // ─────────────────────────────────────────────
 // Endpoints API

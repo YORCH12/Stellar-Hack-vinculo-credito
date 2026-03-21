@@ -1,0 +1,10 @@
+{
+  "name": "Vínculo - Nivel Diamante",
+  "description": "SBT de reputación otorgado al superar los 50 puntos de Trust Score en la red Stellar.",
+  "image": "https://tudominio.com/imagenes/diamante.png",
+  "attributes": [
+    { "trait_type": "Nivel", "value": "Diamante" },
+    { "trait_type": "Beneficio de Crédito", "value": " 2500 XLM" },
+    { "trait_type": "Plataforma", "value": "Vínculo" }
+  ]
+}
