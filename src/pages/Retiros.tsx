@@ -484,7 +484,6 @@ const Retiros = () => {
                       }`}
                     >
                       <span className="block text-sm">{opt.label}</span>
-                      <span className={`block text-[10px] mt-0.5 ${selectedMonths === opt.months ? "opacity-80" : "text-muted-foreground"}`}>{opt.apy}% APY</span>
                     </button>
                   ))}
                 </div>
