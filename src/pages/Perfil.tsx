@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Wallet, Star, ChevronRight, LogOut, HelpCircle, Bell, Pencil, Loader2 } from "lucide-react";
+import { Shield, Wallet, Star, ChevronRight, LogOut, HelpCircle, Bell, Pencil, Loader2, Award } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import WalletSetupModal from "@/components/WalletSetupModal";
 import logoVin from "@/assets/logo-vin.png";
@@ -17,10 +17,46 @@ const Perfil = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  
+  // NUEVO ESTADO: Para controlar el botón mientras Node.js mintea el NFT
+  const [isMinting, setIsMinting] = useState(false);
 
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
   const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  // FUNCIÓN ACTUALIZADA CON LOADING STATE
+  const handleClaimNFT = async () => {
+    if (!walletAddress) {
+      alert("Por favor, conecta tu wallet primero para poder recibir el NFT.");
+      return;
+    }
+
+    setIsMinting(true);
+    try {
+      const response = await fetch("http://localhost:3000/api/evaluate-and-mint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userAddress: walletAddress, 
+          depositsCount: depositsCount, 
+          totalVolume: balance 
+        })
+      });
+      
+      const data = await response.json();
+      if (data.status === "minted") {
+        alert("¡Felicidades! NFT Recibido con éxito en tu wallet.");
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error("Error pidiendo el NFT:", error);
+      alert("Hubo un error de conexión con el servidor.");
+    } finally {
+      setIsMinting(false);
+    }
+  };
 
   const fetchWallet = () => {
     if (!user) return;
@@ -103,16 +139,34 @@ const Perfil = () => {
               style={{ width: `${Math.min((depositsCount / requiredDeposits) * 100, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{depositsCount} de {requiredDeposits} depósitos</span>
+          <div className="flex justify-between text-xs text-muted-foreground mb-4">
+            
             <span className={isUnlocked ? "text-primary font-semibold" : ""}>{isUnlocked ? "✓ Desbloqueado" : "En progreso"}</span>
           </div>
+
+          {/* NUEVO: BOTÓN DE RECLAMAR NFT */}
+          {isUnlocked && (
+            <button
+              onClick={handleClaimNFT}
+              disabled={isMinting || !walletAddress}
+              className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold shadow-sm hover:bg-primary/90 active:scale-[0.97] transition-all disabled:opacity-50"
+            >
+              {isMinting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Award className="w-5 h-5" />
+              )}
+              {isMinting ? "Generando NFT en Stellar..." : "Reclamar NFT de Nivel"}
+            </button>
+          )}
+
           {creditWithdrawn && (
-            <div className="mt-3 bg-primary/10 rounded-lg p-3">
+            <div className="mt-4 bg-primary/10 rounded-lg p-3">
               <p className="text-xs font-semibold text-primary">Crédito retirado exitosamente ✅</p>
             </div>
           )}
         </div>
+        
 
         {/* Wallet info */}
         <div className="card-elevated p-5 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>

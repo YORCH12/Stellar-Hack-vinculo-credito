@@ -10,8 +10,11 @@ import BottomNav from "@/components/BottomNav";
 import { useApp } from "@/context/AppContext";
 
 const Index = () => {
-  const [depositOpen, setDepositOpen] = useState(false);
+  // 1. Traemos SOLO la función para simular el tiempo del contexto
   const { simulateWeek } = useApp();
+  
+  // 2. Estado para controlar cuándo se abre el modal de depósitos
+  const [depositOpen, setDepositOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -24,6 +27,8 @@ const Index = () => {
             <p className="text-xs text-muted-foreground">Tu camino al crédito 💪</p>
           </div>
         </div>
+        
+        {/* Botón Mágico: Adelanta el tiempo 7 días en el historial */}
         <button
           onClick={simulateWeek}
           className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-secondary rounded-full px-3 py-1.5 active:scale-95 transition-all hover:bg-secondary/80"
@@ -36,7 +41,9 @@ const Index = () => {
       {/* Content */}
       <main className="px-5 space-y-4 max-w-md mx-auto">
         <section className="space-y-4 opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
+          
           <BalanceCard />
+          
           <button
             onClick={() => setDepositOpen(true)}
             className="btn-emerald w-full flex items-center justify-center gap-2 py-4 text-base"
@@ -44,7 +51,10 @@ const Index = () => {
             <Plus className="w-5 h-5" />
             Depositar Ganancias
           </button>
+
+          {/* Aquí vive la rueda matemática que hicimos. ¡Ella solita habla con Node.js! */}
           <ProgressRing />
+
         </section>
 
         <section className="opacity-0 animate-fade-up" style={{ animationDelay: "250ms", animationFillMode: "forwards" }}>
@@ -57,6 +67,8 @@ const Index = () => {
       </main>
 
       <BottomNav />
+      
+      {/* Modal invisible hasta que depositOpen sea true */}
       <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />
     </div>
   );

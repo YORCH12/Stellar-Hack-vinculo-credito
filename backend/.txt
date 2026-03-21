@@ -1,0 +1,126 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { 
+  Keypair, 
+  rpc, 
+  TransactionBuilder, 
+  Networks, 
+  Operation, 
+  BASE_FEE, 
+  nativeToScVal 
+} from '@stellar/stellar-sdk';
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const RPC_URL = "https://soroban-testnet.stellar.org";
+const server = new rpc.Server(RPC_URL);
+
+// Función para mintear el NFT en Soroban
+async function mintNftOnChain(userAddress) {
+  try {
+    // 1. Cargar la wallet del Admin usando la Secret Key
+    const adminKeypair = Keypair.fromSecret(process.env.ADMIN_SECRET_KEY);
+    const adminPublicKey = adminKeypair.publicKey();
+    
+    console.log(`[NFT] Iniciando minteo para: ${userAddress}`);
+    console.log(`[NFT] Usando admin wallet: ${adminPublicKey}`);
+
+    const account = await server.getAccount(adminPublicKey);
+
+    // 2. Construir la transacción llamando a la función "mint" (o como se llame en tu contrato NFT)
+    let transaction = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.TESTNET,
+    })
+      .addOperation(
+        Operation.invokeContractFunction({
+          contract: process.env.NFT_CONTRACT_ID,
+          function: "mint", // Reemplaza con el nombre de tu función en Rust
+          args: [
+            nativeToScVal(userAddress, { type: "address" }) // Le pasamos a quién le toca el NFT
+          ],
+        })
+      )
+      .setTimeout(30)
+      .build();
+
+    // 3. Preparar (Footprint)
+    transaction = await server.prepareTransaction(transaction);
+
+    // 4. Firmar con la llave secreta del Backend (SIN Freighter)
+    transaction.sign(adminKeypair);
+
+    // 5. Enviar a la red
+    const submitRes = await server.sendTransaction(transaction);
+    if (submitRes.status !== "PENDING" && submitRes.status !== "SUCCESS") {
+      throw new Error("Transacción rechazada por la red estelar.");
+    }
+
+    // 6. Polling para esperar confirmación
+    let txStatus = submitRes.status;
+    let getTxRes;
+    while (txStatus === "PENDING" || txStatus === "NOT_FOUND") {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      getTxRes = await server.getTransaction(submitRes.hash);
+      txStatus = getTxRes.status.toUpperCase();
+    }
+
+    if (txStatus === "SUCCESS") {
+      return { success: true, hash: submitRes.hash };
+    } else {
+      throw new Error("El Smart Contract del NFT falló la ejecución.");
+    }
+
+  } catch (error) {
+    console.error("[NFT ERROR]", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ENDPOINT PRINCIPAL: Evaluar y Mintear
+app.post('/api/evaluate-and-mint', async (req, res) => {
+  const { userAddress, depositsCount, totalVolume } = req.body;
+
+  if (!userAddress) {
+    return res.status(400).json({ error: "Falta la dirección del usuario" });
+  }
+
+  // --- LÓGICA DE EVALUACIÓN ---
+  // Aquí puedes validar con Supabase o Horizon. 
+  // Para el Hackathon, confiaremos en los datos enviados o haremos una regla simple:
+  console.log(`Evaluando a ${userAddress}... Depósitos: ${depositsCount}, Volumen: ${totalVolume}`);
+  
+  const MIN_DEPOSITS_REQUIRED = 3; // Ejemplo: Nivel Plata
+  
+  if (depositsCount >= MIN_DEPOSITS_REQUIRED) {
+    console.log("✅ Usuario cumple los requisitos. Procediendo a mintear NFT...");
+    
+    const mintResult = await mintNftOnChain(userAddress);
+    
+    if (mintResult.success) {
+      return res.json({ 
+        message: "¡Felicidades! NFT minteado con éxito.", 
+        txHash: mintResult.hash,
+        status: "minted"
+      });
+    } else {
+      return res.status(500).json({ error: "Fallo al mintear en la blockchain", details: mintResult.error });
+    }
+  } else {
+    console.log("❌ Usuario NO cumple los requisitos aún.");
+    return res.json({ 
+      message: `Te faltan ${MIN_DEPOSITS_REQUIRED - depositsCount} depósitos para tu NFT.`,
+      status: "pending"
+    });
+  }
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`🚀 Servidor backend corriendo en el puerto ${port}`);
+});

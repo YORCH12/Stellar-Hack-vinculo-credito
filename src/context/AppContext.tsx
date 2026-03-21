@@ -5,6 +5,7 @@ export interface Deposit {
   amount: number;
   date: Date;
   label: string;
+  daysAgo: number; // 🚀 NUEVO: Necesario para el Motor de Riesgo
 }
 
 export interface Withdrawal {
@@ -93,6 +94,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             amount,
             date: new Date(),
             label: `Depósito semanal #${newCount}`,
+            daysAgo: 0, // 🚀 NUEVO: Entra con 0 días de antigüedad
           },
           ...prev.deposits,
         ],
@@ -109,6 +111,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (wasLocked && unlocked) {
         setTimeout(() => setShowUnlockCelebration(true), 400);
       }
+
+      // 🚀 NUEVO: Envejecemos todos los depósitos anteriores sumándoles 7 días
+      const agedDeposits = prev.deposits.map(dep => ({
+        ...dep,
+        daysAgo: dep.daysAgo + 7
+      }));
+
       return {
         ...prev,
         balance: prev.balance + amount,
@@ -118,10 +127,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           {
             id: crypto.randomUUID(),
             amount,
-            date: new Date(Date.now() + newCount * 7 * 24 * 60 * 60 * 1000),
+            date: new Date(), 
             label: `Depósito semanal #${newCount}`,
+            daysAgo: 0, // El nuevo depósito entra con 0 días
           },
-          ...prev.deposits,
+          ...agedDeposits, // Agregamos los que ya envejecieron
         ],
       };
     });
