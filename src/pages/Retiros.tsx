@@ -190,26 +190,21 @@ const Retiros = () => {
             <h2 className="text-sm font-bold text-foreground">Staking</h2>
           </div>
 
-          {/* Staking options */}
-          <div className="grid grid-cols-2 gap-2.5 mb-3">
-            {STAKING_OPTIONS.map((opt) => (
-              <button
-                key={opt.months}
-                onClick={() => {
-                  setSelectedMonths(opt.months);
-                  setStakeModalOpen(true);
-                }}
-                className="card-elevated p-4 text-left hover:ring-2 hover:ring-primary/30 active:scale-[0.97] transition-all group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-muted-foreground">{opt.label}</span>
-                  <TrendingUp className="w-3.5 h-3.5 text-accent opacity-60 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <p className="text-xl font-extrabold text-accent">{opt.apy}%</p>
-                <p className="text-[10px] text-muted-foreground">APY</p>
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => setStakeModalOpen(true)}
+            className="card-elevated p-5 w-full flex items-center justify-between hover:ring-2 hover:ring-primary/30 active:scale-[0.97] transition-all group mb-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-accent" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-foreground">Generar rendimientos</p>
+                <p className="text-xs text-muted-foreground">Bloquea tus fondos y gana intereses</p>
+              </div>
+            </div>
+            <Sparkles className="w-5 h-5 text-accent opacity-60 group-hover:opacity-100 transition-opacity" />
+          </button>
 
           {/* Active stakes */}
           {activeStakes.length > 0 && (
