@@ -89,7 +89,7 @@ const Perfil = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-2 flex items-center gap-3">
-        <img src={logoVin} alt="Vin" className="w-7 h-7 object-contain" />
+        <img src={logoVin} alt="Vyn" className="w-7 h-7 object-contain" />
         <h1 className="text-xl font-bold text-foreground tracking-tight">Perfil</h1>
       </header>
 
