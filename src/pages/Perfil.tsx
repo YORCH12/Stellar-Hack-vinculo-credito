@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Shield, Wallet, Star, ChevronRight, LogOut, HelpCircle, Bell, Pencil, Loader2, Award } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import WalletSetupModal from "@/components/WalletSetupModal";
+import NFTModal from "@/components/NFTModal";
 import logoVin from "@/assets/logo-vin.png";
 
 const Perfil = () => {
@@ -20,6 +21,8 @@ const Perfil = () => {
   
   // NUEVO ESTADO: Para controlar el botón mientras Node.js mintea el NFT
   const [isMinting, setIsMinting] = useState(false);
+  const [showNFTModal, setShowNFTModal] = useState(false);
+  const [nftTxHash, setNftTxHash] = useState<string | undefined>();
 
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
@@ -46,7 +49,8 @@ const Perfil = () => {
       
       const data = await response.json();
       if (data.status === "minted") {
-        alert("¡Felicidades! NFT Recibido con éxito en tu wallet.");
+        setNftTxHash(data.txHash);
+        setShowNFTModal(true);
       } else {
         alert(data.message);
       }
@@ -232,6 +236,16 @@ const Perfil = () => {
           }}
         />
       )}
+
+      <NFTModal
+        open={showNFTModal}
+        onClose={() => setShowNFTModal(false)}
+        walletAddress={walletAddress || ""}
+        level={level}
+        depositsCount={depositsCount}
+        totalVolume={balance}
+        txHash={nftTxHash}
+      />
 
       <BottomNav />
     </div>

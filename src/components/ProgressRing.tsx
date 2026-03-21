@@ -8,14 +8,16 @@ interface Level {
   icon: React.ElementType;
   minScore: number;
   color: string;
+  creditAmount?: number;
+  minDeposits?: number;
 }
 
 const LEVELS: Level[] = [
-  { name: "Bronce", emoji: "🥉", icon: Shield, minScore: 0, color: "var(--sky)" },
-  { name: "Plata", emoji: "🥈", icon: Star, minScore: 50, color: "var(--sky)" },
-  { name: "Oro", emoji: "🥇", icon: Crown, minScore: 150, color: "var(--deep)" },
-  { name: "Diamante", emoji: "💎", icon: Gem, minScore: 500, color: "var(--grape)" },
-  { name: "Élite", emoji: "🏆", icon: Trophy, minScore: 1000, color: "var(--grape)" },
+  { name: "Bronce", emoji: "🥉", icon: Shield, minScore: 0, color: "var(--sky)", creditAmount: 50, minDeposits: 0 },
+  { name: "Plata", emoji: "🥈", icon: Star, minScore: 50, color: "var(--sky)", creditAmount: 150, minDeposits: 3 },
+  { name: "Oro", emoji: "🥇", icon: Crown, minScore: 150, color: "var(--deep)", creditAmount: 500, minDeposits: 5 },
+  { name: "Diamante", emoji: "💎", icon: Gem, minScore: 500, color: "var(--grape)", creditAmount: 1000, minDeposits: 10 },
+  { name: "Élite", emoji: "🏆", icon: Trophy, minScore: 1000, color: "var(--grape)", creditAmount: 2000, minDeposits: 20 },
 ];
 
 export function getCurrentLevel(score: number): Level {
