@@ -21,6 +21,8 @@ const Perfil = () => {
   
   // NUEVO ESTADO: Para controlar el botón mientras Node.js mintea el NFT
   const [isMinting, setIsMinting] = useState(false);
+  const [showNFTModal, setShowNFTModal] = useState(false);
+  const [nftTxHash, setNftTxHash] = useState<string | undefined>();
 
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
