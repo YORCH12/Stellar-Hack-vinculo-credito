@@ -3,14 +3,23 @@ import { X, Fingerprint, CheckCircle2, AlertCircle, ExternalLink } from "lucide-
 import { useApp } from "@/context/AppContext";
 import { isConnected, requestAccess, signTransaction } from "@stellar/freighter-api";
 import confetti from "canvas-confetti";
-import { Horizon, TransactionBuilder, Networks, Operation, Asset, BASE_FEE } from "@stellar/stellar-sdk";
+import { 
+  TransactionBuilder, 
+  Networks, 
+  Operation, 
+  BASE_FEE, 
+  nativeToScVal, 
+  rpc, 
+  Transaction 
+} from "@stellar/stellar-sdk";
+
+// Importamos tus constantes (asegúrate de que la ruta sea correcta)
+import { CONTRACT_ID, RPC_URL } from "@/stellar/contracts";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
-
-const DESTINATION_ADDRESS = "GBS6IRXJN5N4D7KOAFD6ZGUYO4RFYEY6Q2ZZTGQDSWNDAGBFGOJVYVFE"; // Reemplaza con tu dirección de depósito real
 
 const DepositModal = ({ open, onClose }: Props) => {
   const { addDeposit, depositsCount, requiredDeposits, isUnlocked, setShowUnlockCelebration } = useApp();
@@ -41,78 +50,63 @@ const DepositModal = ({ open, onClose }: Props) => {
     setErrorMsg("");
 
     try {
-      // 1. Verificar si Freighter está instalado
+      // 1. Inicializar Servidor RPC y verificar conexión
+      const server = new rpc.Server(RPC_URL);
       const connected = await isConnected();
-      if (!connected) {
-        setErrorMsg("Freighter no está instalado. Descárgalo en freighter.app");
-        setStep("error");
-        return;
-      }
+      if (!connected) throw new Error("Instala Freighter para continuar");
 
-      // 2. Solicitar acceso para obtener la llave pública
       const accessResult = await requestAccess();
-      if (accessResult.error || !accessResult.address) {
-        setErrorMsg("Conexión con Freighter rechazada. Intenta de nuevo.");
-        setStep("error");
-        return;
-      }
-
-      const sourcePublicKey = accessResult.address;
-
-      // 3. Conectar a Horizon Testnet y cargar la cuenta
-      const server = new Horizon.Server("https://horizon-testnet.stellar.org");
-      const account = await server.loadAccount(sourcePublicKey).catch(() => null);
+      if (accessResult.error || !accessResult.address) throw new Error("Acceso denegado");
       
-      if (!account) {
-        setErrorMsg("No se encontró tu cuenta en Stellar. Asegúrate de tener fondos en la Testnet.");
-        setStep("error");
-        return;
-      }
+      const sourcePublicKey = accessResult.address;
+      const account = await server.getAccount(sourcePublicKey);
+      const amountInStroops = BigInt(Math.floor(val * 10000000));
 
-      // 4. Construir la transacción con el SDK de Stellar
-      const transaction = new TransactionBuilder(account, {
+      // 2. Construir la transacción de invocación
+      let transaction = new TransactionBuilder(account, {
         fee: BASE_FEE,
         networkPassphrase: Networks.TESTNET,
       })
         .addOperation(
-          Operation.payment({
-            destination: DESTINATION_ADDRESS,
-            asset: Asset.native(), // XLM
-            amount: String(val), // El monto debe pasarse como string
+          Operation.invokeContractFunction({
+            contract: CONTRACT_ID,
+            function: "deposit",
+            args: [
+              nativeToScVal(sourcePublicKey, { type: "address" }),
+              nativeToScVal(amountInStroops, { type: "i128" }),
+            ],
           })
         )
-        .setTimeout(30) // Tiempo de expiración de la transacción (requerido)
+        .setTimeout(30)
         .build();
 
-      // Convertir la transacción a formato XDR
-      const xdr = transaction.toXDR();
+      // 3. Preparar la transacción (Calcula footprint y gas para Soroban)
+      transaction = await server.prepareTransaction(transaction);
 
-      // 5. Solicitar a Freighter que firme el XDR
-      const signResult = await signTransaction(xdr, {
+      // 4. Firmar con Freighter
+      const signResult = await signTransaction(transaction.toXDR(), {
         networkPassphrase: Networks.TESTNET,
       });
 
       if (signResult.error || !signResult.signedTxXdr) {
-        setErrorMsg("Firma rechazada en Freighter. Intenta de nuevo.");
-        setStep("error");
-        return;
+        throw new Error("Firma rechazada por el usuario");
       }
 
-      // 6. Enviar la transacción firmada a la red de Stellar
-      const submitRes = await fetch("https://horizon-testnet.stellar.org/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `tx=${encodeURIComponent(signResult.signedTxXdr)}`,
-      });
+      // 5. Enviar a la red (Usamos as any para evitar errores estrictos de TS)
+      const transactionToSubmit = TransactionBuilder.fromXDR(signResult.signedTxXdr, Networks.TESTNET);
+      const submitRes = await server.sendTransaction(transactionToSubmit) as any;
 
-      if (submitRes.ok) {
-        const submitData = await submitRes.json();
-        setTxHash(submitData.hash || "");
+      // 6. Validar estado (Convertimos a mayúsculas para evitar el error anterior)
+      const currentStatus = submitRes.status ? submitRes.status.toUpperCase() : "";
+
+      if (currentStatus === "PENDING" || currentStatus === "SUCCESS") {
+        setTxHash(submitRes.hash);
         
-        // 7. Registrar el depósito localmente en la app
+        // Actualizamos el estado local de la app
         const wasLocked = !isUnlocked;
         const willUnlock = depositsCount + 1 >= requiredDeposits;
         addDeposit(val);
+        
         setStep("success");
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.65 } });
 
@@ -120,15 +114,13 @@ const DepositModal = ({ open, onClose }: Props) => {
           setTimeout(() => setShowUnlockCelebration(true), 800);
         }
       } else {
-        const errorData = await submitRes.json();
-        console.error("Error en Horizon:", errorData);
-        setErrorMsg("La transacción falló en la red de Stellar.");
-        setStep("error");
+        console.error("Respuesta de la red fallida:", submitRes);
+        throw new Error(submitRes.errorResultXdr || "La transacción fue rechazada por la red");
       }
 
-    } catch (err) {
-      console.error("Deposit error:", err);
-      setErrorMsg("Ocurrió un error inesperado al procesar la transacción.");
+    } catch (err: any) {
+      console.error("Deposit Error Details:", err);
+      setErrorMsg(err.message || "Error al procesar el depósito");
       setStep("error");
     }
   };
@@ -179,10 +171,6 @@ const DepositModal = ({ open, onClose }: Props) => {
               <Fingerprint className="w-5 h-5" />
               Confirmar con Freighter
             </button>
-
-            <p className="text-center text-[10px] text-muted-foreground mt-3">
-              Se abrirá Freighter para firmar la transacción
-            </p>
           </>
         )}
 
@@ -192,15 +180,10 @@ const DepositModal = ({ open, onClose }: Props) => {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-5">
               <Fingerprint className="w-8 h-8 text-primary animate-pulse" />
             </div>
-            <p className="text-lg font-bold text-foreground mb-1">Firmando transacción...</p>
+            <p className="text-lg font-bold text-foreground mb-1">Preparando contrato...</p>
             <p className="text-sm text-muted-foreground text-center max-w-[260px]">
-              Confirma en la extensión Freighter para completar el depósito
+              Calculando recursos y esperando confirmación en Freighter.
             </p>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
-            </div>
           </div>
         )}
 
@@ -211,17 +194,16 @@ const DepositModal = ({ open, onClose }: Props) => {
               <CheckCircle2 className="w-10 h-10 text-primary" />
             </div>
             <p className="text-xl font-bold text-foreground mb-1">¡Depósito exitoso! 🎉</p>
-            <p className="text-sm text-muted-foreground mb-1">
+            <p className="text-sm text-muted-foreground mb-4">
               Se depositaron <span className="font-bold text-foreground">{amount} XLM</span>
             </p>
-            <p className="text-xs text-muted-foreground mb-6">El monto ya fue registrado en tu cuenta</p>
 
             {txHash && (
               <a
                 href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline mb-4"
+                className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline mb-6"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 Ver en el explorador
@@ -260,19 +242,11 @@ const DepositModal = ({ open, onClose }: Props) => {
                 Reintentar
               </button>
             </div>
-
-            <a
-              href="https://www.freighter.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 text-xs text-primary hover:underline"
-            >
-              ¿No tienes Freighter? Descárgala aquí →
-            </a>
           </div>
         )}
       </div>
     </div>
   );
 };
+
 export default DepositModal;
