@@ -3,15 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Wallet, Star, ChevronRight, LogOut, HelpCircle, Bell, Pencil, Loader2, Award, Lock } from "lucide-react";
+import { Shield, Wallet, Star, ChevronRight, LogOut, HelpCircle, Bell, Pencil, Loader2, Award, Lock, Activity } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import WalletSetupModal from "@/components/WalletSetupModal";
-import NFTModal from "@/components/NFTModal"; // 🚀 Importamos el Modal del NFT
+import NFTModal from "@/components/NFTModal";
 import logoVin from "@/assets/logo-vin.png";
 
 const Perfil = () => {
   const navigate = useNavigate();
-  // 🚀 Obtenemos 'deposits' del contexto para las matemáticas
+
+  // Obtenemos 'deposits' del contexto para las matemáticas
   const { balance, depositsCount, creditWithdrawn, deposits } = useApp();
   const { user, signOut } = useAuth();
 
@@ -19,12 +20,12 @@ const Perfil = () => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
   
-  // 🚀 ESTADOS PARA EL NFT Y EL MODAL
+  // ESTADOS PARA EL NFT Y EL MODAL
   const [isMinting, setIsMinting] = useState(false);
   const [showNFTModal, setShowNFTModal] = useState(false);
   const [nftTxHash, setNftTxHash] = useState<string | undefined>();
 
-  // 🚀 ESTADO DEL MOTOR DE RIESGO
+  // ESTADO DEL MOTOR DE RIESGO (BACKEND)
   const [riskData, setRiskData] = useState({ 
     score: 0, 
     tier: 0, 
@@ -35,7 +36,7 @@ const Perfil = () => {
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
   const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
-  // EL EFECTO: Sincroniza el perfil con las matemáticas de Node.js
+  // Sincroniza el perfil con las matemáticas de Node.js
   useEffect(() => {
     const fetchRiskScore = async () => {
       if (deposits.length === 0) return;
@@ -71,22 +72,16 @@ const Perfil = () => {
       alert("Por favor, conecta tu wallet primero.");
       return;
     }
-
     setIsMinting(true);
     try {
       const response = await fetch("http://localhost:3000/api/evaluate-and-mint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userAddress: walletAddress, 
-          deposits: deposits 
-        })
+        body: JSON.stringify({ userAddress: walletAddress, deposits })
       });
-      
       const data = await response.json();
       
       if (response.ok && data.status === "minted") {
-        // 🚀 Si es exitoso, abrimos el modal pasándole el hash de Soroban
         setNftTxHash(data.txHash);
         setShowNFTModal(true);
       } else {
@@ -160,7 +155,6 @@ const Perfil = () => {
           </div>
           <div className="card-elevated p-4 text-center">
             <Shield className="w-4 h-4 text-muted-foreground mx-auto mb-1.5" />
-            {/* El nivel ahora viene directo de las mates de Node */}
             <p className="text-lg font-bold text-foreground">{riskData.tierName}</p>
             <p className="text-[10px] text-muted-foreground font-medium">Nivel</p>
           </div>
@@ -168,9 +162,17 @@ const Perfil = () => {
 
         {/* Card de Reputación */}
         <div className={`card-elevated p-5 border-2 opacity-0 animate-fade-up ${isUnlocked ? "border-primary/20" : "border-transparent"}`} style={{ animationDelay: "200ms", animationFillMode: "forwards" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Shield className={`w-4 h-4 ${isUnlocked ? "text-primary" : "text-muted-foreground"}`} />
-            <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Estado de Reputación</span>
+          
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <Shield className={`w-4 h-4 ${isUnlocked ? "text-primary" : "text-muted-foreground"}`} />
+              <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Estado de Reputación</span>
+            </div>
+            {/* Agregado del Trust Score para darle un toque más analítico */}
+            <div className="flex items-center gap-1 text-xs text-primary font-medium">
+              <Activity className="w-3.5 h-3.5" />
+              <span className="font-bold">{riskData.score.toFixed(1)} pts</span>
+            </div>
           </div>
           
           <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-2 relative">
@@ -255,7 +257,7 @@ const Perfil = () => {
           ))}
         </div>
 
-        <p className="text-center text-[10px] text-muted-foreground pt-2 pb-4">Vyn v1.0 · Stellar Network</p>
+        <p className="text-center text-[10px] text-muted-foreground pt-2 pb-4">Vin v1.0 · Stellar Network</p>
       </main>
 
       {/* MODALES */}
@@ -265,7 +267,7 @@ const Perfil = () => {
         open={showNFTModal}
         onClose={() => setShowNFTModal(false)}
         walletAddress={walletAddress || ""}
-        level={riskData.tierName} // Le pasamos el nombre real (Plata, Oro, etc)
+        level={riskData.tierName}
         depositsCount={depositsCount}
         totalVolume={balance}
         txHash={nftTxHash}
