@@ -360,10 +360,18 @@ const Retiros = () => {
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full text-3xl font-bold text-foreground bg-secondary rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-shadow tabular-nums"
+                    className={`w-full text-3xl font-bold text-foreground bg-secondary rounded-xl px-4 py-4 outline-none focus:ring-2 transition-shadow tabular-nums ${
+                      parseFloat(amount) > balance ? "ring-2 ring-destructive focus:ring-destructive" : "focus:ring-primary/20"
+                    }`}
                     min="1"
                     max={balance}
                   />
+                  {parseFloat(amount) > balance && (
+                    <p className="text-xs text-destructive font-semibold mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      El monto excede tu saldo disponible ({balance} XLM)
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2 mb-4">
                   {[10, 25, 50].map((v) => (
@@ -492,10 +500,18 @@ const Retiros = () => {
                   type="number"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
-                  className="w-full text-3xl font-bold text-foreground bg-secondary rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-accent/20 transition-shadow tabular-nums mb-2"
+                  className={`w-full text-3xl font-bold text-foreground bg-secondary rounded-xl px-4 py-4 outline-none focus:ring-2 transition-shadow tabular-nums mb-1 ${
+                    stakeVal > balance ? "ring-2 ring-destructive focus:ring-destructive" : "focus:ring-accent/20"
+                  }`}
                   min="1"
                   max={balance}
                 />
+                {stakeVal > balance && (
+                  <p className="text-xs text-destructive font-semibold mb-2 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    El monto excede tu saldo disponible ({balance} XLM)
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mb-5">Disponible: <span className="font-bold text-foreground">{balance} XLM</span></p>
 
                 {/* Projection card */}
