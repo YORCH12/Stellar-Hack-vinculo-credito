@@ -483,7 +483,8 @@ const Retiros = () => {
                           : "bg-secondary text-foreground font-medium"
                       }`}
                     >
-                      <span className="block text-sm">{opt.label}</span>
+                      <span className="block text-sm font-bold">{opt.label}</span>
+                      <span className="block text-[10px] text-muted-foreground mt-0.5">17% APY</span>
                     </button>
                   ))}
                 </div>
