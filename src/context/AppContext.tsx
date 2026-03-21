@@ -14,6 +14,16 @@ export interface Withdrawal {
   txHash: string;
 }
 
+export interface StakePosition {
+  id: string;
+  amount: number;
+  months: number;
+  apy: number;
+  startDate: Date;
+  endDate: Date;
+  status: "active" | "completed";
+}
+
 interface AppState {
   balance: number;
   deposits: Deposit[];
@@ -23,6 +33,7 @@ interface AppState {
   creditAmount: number;
   creditWithdrawn: boolean;
   withdrawals: Withdrawal[];
+  stakes: StakePosition[];
 }
 
 interface AppContextType extends AppState {
@@ -30,11 +41,19 @@ interface AppContextType extends AppState {
   simulateWeek: () => void;
   withdrawCredit: () => void;
   addWithdrawal: (amount: number, txHash: string) => void;
+  addStake: (amount: number, months: number) => void;
   showSuccess: boolean;
   setShowSuccess: (v: boolean) => void;
   showUnlockCelebration: boolean;
   setShowUnlockCelebration: (v: boolean) => void;
 }
+
+const STAKING_APY: Record<number, number> = {
+  1: 4,
+  3: 7,
+  6: 11,
+  12: 18,
+};
 
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -54,6 +73,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     creditAmount: 300,
     creditWithdrawn: false,
     withdrawals: [],
+    stakes: [],
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [showUnlockCelebration, setShowUnlockCelebration] = useState(false);
@@ -128,6 +148,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
+  const addStake = useCallback((amount: number, months: number) => {
+    const apy = STAKING_APY[months] || 4;
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + months);
+    setState((prev) => ({
+      ...prev,
+      balance: Math.max(0, prev.balance - amount),
+      stakes: [
+        {
+          id: crypto.randomUUID(),
+          amount,
+          months,
+          apy,
+          startDate,
+          endDate,
+          status: "active",
+        },
+        ...prev.stakes,
+      ],
+    }));
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -136,6 +179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         simulateWeek,
         withdrawCredit,
         addWithdrawal,
+        addStake,
         showSuccess,
         setShowSuccess,
         showUnlockCelebration,
