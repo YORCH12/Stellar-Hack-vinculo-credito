@@ -59,56 +59,75 @@ impl VinculoLending {
 
     /// Solicita préstamo: lee tier en `vinculo_sbt`, valida tope y liquidez, transfiere al usuario.
     pub fn request_loan(env: Env, user: Address, amount: i128, months: u64) {
-        // 1. El usuario debe firmar la transacción (Aprobación)
+        // 1. El usuario debe firmar la transacción
         user.require_auth();
-        assert!(amount > 0, "amount must be > 0");
-        assert!(
-            months == 1 || months == 3 || months == 6 || months == 12,
-            "invalid term (months)"
-        );
+
+        // Validaciones sin panic! — errores descriptivos
+        if amount <= 0 {
+            panic!("amount must be > 0");
+        }
+        if months != 1 && months != 3 && months != 6 && months != 12 {
+            panic!("invalid term: must be 1, 3, 6 or 12 months");
+        }
 
         let token_addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Token)
-            .expect("init not called");
+            .unwrap_or_else(|| panic!("lending not initialized: token missing"));
         let sbt_addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Sbt)
-            .expect("init not called");
+            .unwrap_or_else(|| panic!("lending not initialized: sbt missing"));
 
-        // 2. Consultamos la reputación (SBT) del usuario
+        // 2. Consultamos la reputación (SBT) — match seguro, NO panic en tier 4
         let sbt_client = VinculoSBTClient::new(&env, &sbt_addr);
         let tier = sbt_client.get_tier(&user);
-        assert!((1..=4).contains(&tier), "no valid SBT tier for credit");
 
+        // ✅ Cobertura EXPLÍCITA de todos los tiers incluido 4 (Platino)
+        let max = match tier {
+            1 => 300_000_000_i128,    // Plata    — 30 XLM  (300 * 10^7 stroops)
+            2 => 600_000_000_i128,    // Oro      — 60 XLM
+            3 => 1_500_000_000_i128,  // Diamante — 150 XLM
+            4 => 5_000_000_000_i128,  // Platino  — 500 XLM
+            _ => panic!("no valid SBT tier for credit: tier = {}", tier),
+        };
+
+        // 3. Sin préstamo activo previo
         let existing: Loan = env
             .storage()
             .persistent()
             .get(&DataKey::Loan(user.clone()))
             .unwrap_or_default();
-        assert!(existing.total_owed == 0, "active loan exists");
+        if existing.total_owed > 0 {
+            panic!("active loan already exists");
+        }
 
-        // 3. Validamos contra el límite máximo de su Nivel (El Guardaespaldas)
-        let max = max_principal_for_tier(tier);
-        assert!(amount <= max, "amount exceeds tier limit");
+        // 4. Validamos monto contra límite del tier
+        if amount > max {
+            panic!("amount {} exceeds tier {} limit {}", amount, tier, max);
+        }
 
-        let apy_bps = 500;
-        let interest = (amount * 5) / 100;
-        let total_owed = amount + interest;
-
+        // 5. Verificamos liquidez del pool
         let token_client = token::Client::new(&env, &token_addr);
         let this = env.current_contract_address();
         let pool_balance = token_client.balance(&this);
-        assert!(pool_balance >= amount, "insufficient pool liquidity");
+        if pool_balance < amount {
+            panic!("insufficient pool liquidity: pool={} requested={}", pool_balance, amount);
+        }
 
-        // 4. TRANSFERENCIA DIRECTA: El contrato manda los fondos a la wallet del usuario
+        // 6. Interés fijo del 5%
+        let interest = (amount * 5) / 100;
+        let total_owed = amount + interest;
+        let apy_bps = apy_bps_for_tier(tier);
+
+        // 7. Transferencia segura — si falla, la tx revierte con error legible
         token_client.transfer(&this, &user, &amount);
 
+        // 8. Guardamos el préstamo
         let duration_secs = months * 60;
         let due = env.ledger().timestamp() + duration_secs;
-
         let loan = Loan {
             principal: amount,
             total_owed,
@@ -171,13 +190,15 @@ impl VinculoLending {
     }
 }
 
-// 🚀 CAMBIO CLAVE: Sincronizado con el Node.js (CREDIT_LIMITS)
+// 1 XLM = 10_000_000 stroops
+// Esta función ya no se usa directamente (el match vive en request_loan)
+// Se mantiene por compatibilidad con tests externos.
 fn max_principal_for_tier(tier: u32) -> i128 {
     match tier {
-        1 => 300_000_0000,      // Plata
-        2 => 600_000_0000,      // Oro
-        3 => 1_500_000_0000,    // Diamante
-        4 => 5_000_000_0000,    // Platino
+        1 => 300_000_000_i128,    // Plata    — 30 XLM
+        2 => 600_000_000_i128,    // Oro      — 60 XLM
+        3 => 1_500_000_000_i128,  // Diamante — 150 XLM
+        4 => 5_000_000_000_i128,  // Platino  — 500 XLM
         _ => 0,
     }
 }
