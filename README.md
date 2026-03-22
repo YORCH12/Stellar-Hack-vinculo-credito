@@ -1,36 +1,36 @@
 # Vyn 🚀
-### De flujo de efectivo a reputación crediticia en Stellar
+### Transforming Cash Flow into Credit Reputation on Stellar
 
-**Vyn** es un protocolo DeFi diseñado para transformar el comportamiento financiero informal en oportunidades de crédito. Mediante un modelo híbrido que combina un **backend analítico** con **smart contracts en Soroban**, permitimos que usuarios sin acceso a la banca tradicional construyan una identidad financiera transparente y segura.
+**Vyn** is a Decentralized Finance (DeFi) protocol designed to bridge the gap between the informal economy and formal financial systems. By utilizing a hybrid model that combines a **data-driven backend** with **Soroban smart contracts**, Vyn enables users to build a credit identity based on their real-world cash flow behavior.
 
 ---
 
-## 🌟 Visión del Proyecto
-En economías emergentes, el flujo de caja diario no suele traducirse en historial crediticio. **Vyn** soluciona esto analizando la frecuencia y volumen de transacciones para generar un "Score de Confianza" on-chain, eliminando la fricción técnica y el lenguaje complejo de la blockchain para el usuario final.
+## 🌟 Project Vision
+In many emerging markets, heavy cash usage prevents entrepreneurs and independent workers from accessing credit. **Vyn** solves this by analyzing transaction frequency and volume to generate an on-chain "Trust Score." Our priority is **technical abstraction**: providing an intuitive interface that removes the friction of "blockchain jargon" for the end user.
 
-## ✨ Características Principales
-* **Modelo Híbrido:** Un motor en el backend procesa la lógica de frecuencia mientras los smart contracts gestionan la seguridad y los fondos.
-* **Abstracción de Complejidad:** Interfaz diseñada para usuarios no técnicos, enfocada en la utilidad financiera antes que en la jerga cripto.
-* **Inclusión Financiera:** Crédito basado en datos reales de flujo de efectivo, no solo en garantías tradicionales.
-* **Eficiencia Stellar:** Transacciones rápidas y de bajísimo costo gracias a la red Stellar.
+## ✨ Key Features
+* **Hybrid Flow Analysis:** A specialized backend engine processes transaction frequency and patterns, while smart contracts manage security and fund distribution.
+* **Smart Contracts (Soroban + Rust):** Immutable, transparent execution of loan agreements and reputation recording on the Stellar network.
+* **Financial Inclusion:** Credit access based on real cash flow data rather than traditional collateral or bank history.
+* **Stellar Efficiency:** Leveraging the speed and near-zero costs of the Stellar network to democratize access to capital.
 
-## 🏗 Arquitectura Técnica
-El ecosistema de Vyn se divide en:
-1.  **Capa de Inteligencia (Backend):** Procesa el análisis de datos y determina la capacidad de crédito.
-2.  **Capa de Protocolo (On-chain):** Contratos inteligentes escritos en **Rust** sobre **Soroban** que ejecutan la lógica de préstamos y registro de reputación.
+## 🏗 System Architecture
+The Vyn ecosystem operates on two fundamental pillars:
+1.  **Intelligence Layer (Backend):** Acts as the "brain" that processes historical data and determines the user's credit capacity.
+2.  **Protocol Layer (On-chain):** Smart contracts written in **Rust** (Soroban SDK) that ensure fund custody, automated payments, and credit history integrity.
 
-## 🛠 Stack Tecnológico
-* **Smart Contracts:** Rust (Soroban SDK)
-* **Red:** Stellar Network (Testnet)
-* **Backend:** FastAPI / Python (Procesamiento de datos)
+## 🛠 Tech Stack
+* **Blockchain:** Stellar Network (Testnet)
+* **Smart Contracts:** Soroban SDK (Rust)
+* **Backend:** FastAPI (Python) / Node.js
 * **Frontend:** React + Tailwind CSS
-* **Herramientas:** Stellar CLI, Soroban RPC
+* **Integration:** Stellar SDK & Soroban RPC
 
 ---
 
-## 🚀 Instalación y Configuración
+## 🚀 Installation & Setup
 
-### 1. Clonar el repositorio
+### 1. Clone the repository
 ```bash
-git clone [https://github.com/tu-usuario/vyn.git](https://github.com/tu-usuario/vyn.git)
+git clone [https://github.com/your-username/vyn.git](https://github.com/your-username/vyn.git)
 cd vyn
