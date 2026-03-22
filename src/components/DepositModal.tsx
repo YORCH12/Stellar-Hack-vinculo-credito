@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Fingerprint, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { isConnected, requestAccess, signTransaction } from "@stellar/freighter-api";
 import confetti from "canvas-confetti";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   TransactionBuilder, 
   Networks, 
@@ -27,6 +28,41 @@ const DepositModal = ({ open, onClose }: Props) => {
   const [step, setStep] = useState<"input" | "signing" | "success" | "error">("input");
   const [errorMsg, setErrorMsg] = useState("");
   const [txHash, setTxHash] = useState("");
+
+  // 🔐 CANDADO DE SEGURIDAD PARA FREIGHTER
+  const [registeredWallet, setRegisteredWallet] = useState<string | null>(null);
+
+  // 📡 Obtenemos la wallet real del usuario desde Supabase al cargar el modal
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchWallet = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("wallet_address")
+          .eq("user_id", user.id)
+          .single();
+
+        if (profile?.wallet_address && isMounted) {
+          setRegisteredWallet(profile.wallet_address);
+        }
+      } catch (error) {
+        console.error("Error obteniendo la wallet registrada:", error);
+      }
+    };
+
+    if (open) {
+      fetchWallet();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -59,6 +95,13 @@ const DepositModal = ({ open, onClose }: Props) => {
       if (accessResult.error || !accessResult.address) throw new Error("Acceso denegado");
       
       const sourcePublicKey = accessResult.address;
+
+      // 🛡️ NUEVO CANDADO DE SEGURIDAD
+      if (registeredWallet && sourcePublicKey !== registeredWallet) {
+        const shortWallet = `${registeredWallet.substring(0, 4)}...${registeredWallet.substring(52)}`;
+        throw new Error(`Cuenta incorrecta en Freighter. Por favor cambia a tu cuenta registrada: ${shortWallet}`);
+      }
+
       const account = await server.getAccount(sourcePublicKey);
       const amountInStroops = BigInt(Math.floor(val * 10000000));
 

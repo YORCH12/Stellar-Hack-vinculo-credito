@@ -38,7 +38,7 @@ pub struct VinculoLending;
 #[contractimpl]
 impl VinculoLending {
     /// Guarda dirección del token (SAC / Soroban token) y del contrato `VinculoSBT`.
-    pub fn init(env: Env, token: Address, sbt: Address) {
+    pub fn init_lending(env: Env, token: Address, sbt: Address) {
         env.storage().instance().set(&DataKey::Token, &token);
         env.storage().instance().set(&DataKey::Sbt, &sbt);
     }
@@ -59,6 +59,7 @@ impl VinculoLending {
 
     /// Solicita préstamo: lee tier en `vinculo_sbt`, valida tope y liquidez, transfiere al usuario.
     pub fn request_loan(env: Env, user: Address, amount: i128, months: u64) {
+        // 1. El usuario debe firmar la transacción (Aprobación)
         user.require_auth();
         assert!(amount > 0, "amount must be > 0");
         assert!(
@@ -77,9 +78,9 @@ impl VinculoLending {
             .get(&DataKey::Sbt)
             .expect("init not called");
 
+        // 2. Consultamos la reputación (SBT) del usuario
         let sbt_client = VinculoSBTClient::new(&env, &sbt_addr);
         let tier = sbt_client.get_tier(&user);
-        // En `vinculo_sbt`: 0 = sin crédito/revocado; 1–4 = Plata → Platino
         assert!((1..=4).contains(&tier), "no valid SBT tier for credit");
 
         let existing: Loan = env
@@ -89,11 +90,12 @@ impl VinculoLending {
             .unwrap_or_default();
         assert!(existing.total_owed == 0, "active loan exists");
 
+        // 3. Validamos contra el límite máximo de su Nivel (El Guardaespaldas)
         let max = max_principal_for_tier(tier);
         assert!(amount <= max, "amount exceeds tier limit");
 
-        let apy_bps = apy_bps_for_tier(tier);
-        let interest = (amount * (apy_bps as i128) * (months as i128)) / 1200;
+        let apy_bps = 500;
+        let interest = (amount * 5) / 100;
         let total_owed = amount + interest;
 
         let token_client = token::Client::new(&env, &token_addr);
@@ -101,6 +103,7 @@ impl VinculoLending {
         let pool_balance = token_client.balance(&this);
         assert!(pool_balance >= amount, "insufficient pool liquidity");
 
+        // 4. TRANSFERENCIA DIRECTA: El contrato manda los fondos a la wallet del usuario
         token_client.transfer(&this, &user, &amount);
 
         let duration_secs = months * 60;
@@ -168,12 +171,13 @@ impl VinculoLending {
     }
 }
 
+// 🚀 CAMBIO CLAVE: Sincronizado con el Node.js (CREDIT_LIMITS)
 fn max_principal_for_tier(tier: u32) -> i128 {
     match tier {
-        1 => 1_000,      // Plata
-        2 => 5_000,      // Oro
-        3 => 20_000,     // Diamante
-        4 => 50_000,     // Platino
+        1 => 300_000_0000,      // Plata
+        2 => 600_000_0000,      // Oro
+        3 => 1_500_000_0000,    // Diamante
+        4 => 5_000_000_0000,    // Platino
         _ => 0,
     }
 }
@@ -182,10 +186,10 @@ fn max_principal_for_tier(tier: u32) -> i128 {
 /// Interés sobre el plazo: `(principal * apy_bps * months) / 1200` (misma convención que staking).
 fn apy_bps_for_tier(tier: u32) -> u64 {
     match tier {
-        1 => 1_200,
-        2 => 800,
-        3 => 500,
-        4 => 400,
+        1 => 1_200, // 12%
+        2 => 800,   // 8%
+        3 => 500,   // 5%
+        4 => 400,   // 4%
         _ => 0,
     }
 }
@@ -215,10 +219,11 @@ mod tests {
         let token = token::Client::new(&env, &token_id);
         token.mint(&lending_id, &10_000);
 
-        lending.request_loan(&user, &1000, &3);
+        // Pedimos 600 porque es el máximo de Nivel 2 (Oro)
+        lending.request_loan(&user, &600, &3);
         let loan = lending.get_loan(&user);
-        assert!(loan.total_owed > 1000);
-        assert_eq!(loan.principal, 1000);
+        assert!(loan.total_owed > 600);
+        assert_eq!(loan.principal, 600);
 
         token.mint(&user, &loan.total_owed);
         lending.repay(&user, &loan.total_owed);

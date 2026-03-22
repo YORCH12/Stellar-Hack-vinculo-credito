@@ -1,7 +1,16 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { Keypair, rpc, TransactionBuilder, Networks, Operation, BASE_FEE, nativeToScVal } = require("@stellar/stellar-sdk");
+const { 
+  Keypair, 
+  rpc, 
+  TransactionBuilder, 
+  Networks, 
+  Operation, 
+  BASE_FEE, 
+  nativeToScVal, 
+  scValToNative 
+} = require("@stellar/stellar-sdk");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,22 +22,36 @@ const RPC_URL = "https://soroban-testnet.stellar.org";
 const server = new rpc.Server(RPC_URL);
 
 // ─────────────────────────────────────────────
-// Helpers Matemáticos
+// CONFIGURACIÓN DE CRÉDITO
 // ─────────────────────────────────────────────
-function weightedMean(deposits) {
+
+const CREDIT_LIMITS = {
+  0: { name: "Bronce", amount: 0 },
+  1: { name: "Plata", amount: 300 },
+  2: { name: "Oro", amount: 600 },
+  3: { name: "Diamante", amount: 1500 },
+  4: { name: "Platino", amount: 5000 }
+};
+
+// ─────────────────────────────────────────────
+// HELPERS MATEMÁTICOS
+// ─────────────────────────────────────────────
+
+function weightedMean(deposits = []) {
+  if (!deposits || deposits.length === 0) return 0;
   let weightedSum = 0;
   let totalWeight = 0;
   for (const { amount, daysAgo } of deposits) {
     const weight = 1 / (daysAgo + 1);
-    weightedSum += amount * weight;
+    weightedSum += (amount || 0) * weight;
     totalWeight += weight;
   }
   return totalWeight === 0 ? 0 : weightedSum / totalWeight;
 }
 
-function meanAbsoluteDeviation(deposits) {
-  if (deposits.length === 0) return 0;
-  const amounts = deposits.map((d) => d.amount);
+function meanAbsoluteDeviation(deposits = []) {
+  if (!deposits || deposits.length === 0) return 0;
+  const amounts = deposits.map((d) => d.amount || 0);
   const mean = amounts.reduce((acc, v) => acc + v, 0) / amounts.length;
   return amounts.reduce((acc, v) => acc + Math.abs(v - mean), 0) / amounts.length;
 }
@@ -51,111 +74,122 @@ function computeScoreAndTier(wMean, mad, n) {
 }
 
 // ─────────────────────────────────────────────
-// Función para mintear en Stellar 🚀
+// ENDPOINT: CONSULTAR CRÉDITO (SIMULACIÓN) 🔗
 // ─────────────────────────────────────────────
+
+app.post("/api/get-available-credit", async (req, res) => {
+  const { userAddress } = req.body;
+  if (!userAddress) return res.status(400).json({ error: "Falta wallet" });
+
+  try {
+    console.log(`[DEBUG] 🔍 Consultando Tier para: ${userAddress}`);
+
+    // 1. Cargamos una cuenta temporal para la simulación
+    const adminKeypair = Keypair.fromSecret(process.env.SECRET_KEY_ADMIN);
+    const sourceAccount = await server.getAccount(adminKeypair.publicKey());
+
+    // 2. Creamos la transacción de "lectura"
+    const tx = new TransactionBuilder(sourceAccount, { 
+      fee: BASE_FEE, 
+      networkPassphrase: Networks.TESTNET 
+    })
+    .addOperation(
+      Operation.invokeContractFunction({ // ✅ Nombre estándar
+        contract: process.env.NFT_CONTRACT_ID,
+        function: "get_tier",
+        args: [nativeToScVal(userAddress, { type: "address" })]
+      })
+    )
+    .setTimeout(30)
+    .build();
+
+    // 3. Simulamos la transacción para obtener el valor de retorno
+    const simulation = await server.simulateTransaction(tx);
+
+    let finalTier = 0;
+    if (simulation.result && simulation.result.retval) {
+      finalTier = Number(scValToNative(simulation.result.retval)) || 0;
+    }
+
+    const config = CREDIT_LIMITS[finalTier] || CREDIT_LIMITS[0];
+    console.log(`[DEBUG] ✅ Tier: ${finalTier} (${config.name})`);
+
+    return res.json({
+      success: true,
+      tier: finalTier,
+      tierName: config.name,
+      availableCredit: config.amount,
+      currency: "XLM"
+    });
+
+  } catch (error) {
+    console.error(`[DEBUG] 💥 Error en /get-available-credit:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─────────────────────────────────────────────
+// FUNCIÓN PARA MINTEAR NFT 🚀
+// ─────────────────────────────────────────────
+
 async function mintNftOnChain(userAddress, tier) {
   try {
-    console.log(`\n[NFT] 1️⃣ Iniciando proceso para Nivel ${tier} a ${userAddress}...`);
-    
     const adminKeypair = Keypair.fromSecret(process.env.SECRET_KEY_ADMIN);
-    console.log("[NFT] 2️⃣ Obteniendo cuenta Admin de la blockchain...");
     const account = await server.getAccount(adminKeypair.publicKey());
     
-    console.log("[NFT] 3️⃣ Armando operación...");
-    let transaction = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
+    let transaction = new TransactionBuilder(account, { 
+        fee: BASE_FEE, 
+        networkPassphrase: Networks.TESTNET 
+    })
       .addOperation(
-        Operation.invokeContractFunction({
+        Operation.invokeContractFunction({ // ✅ Nombre estándar
           contract: process.env.NFT_CONTRACT_ID,
           function: "mint", 
           args: [
-            nativeToScVal(adminKeypair.publicKey(), { type: "address" }), // Quien autoriza
-            nativeToScVal(userAddress, { type: "address" }),    // Quien recibe
-            nativeToScVal(tier, { type: "u32" })                // El nivel
+            nativeToScVal(adminKeypair.publicKey(), { type: "address" }), 
+            nativeToScVal(userAddress, { type: "address" }),    
+            nativeToScVal(tier, { type: "u32" })                
           ],
         })
       )
       .setTimeout(30).build();
 
-    console.log("[NFT] 4️⃣ Simulando transacción en Soroban (prepareTransaction)...");
     transaction = await server.prepareTransaction(transaction);
-
-    console.log("[NFT] 5️⃣ Transacción simulada OK. Firmando con llave maestra...");
     transaction.sign(adminKeypair);
 
-    console.log("[NFT] 6️⃣ Enviando a la red Stellar...");
     const submitRes = await server.sendTransaction(transaction);
-    console.log(`[NFT] 7️⃣ Respuesta de la red: ${submitRes.status}`);
-
-    if (submitRes.status === "ERROR" || submitRes.status === "FAILED") {
-      console.error("[NFT] ❌ Error de Soroban:", JSON.stringify(submitRes.errorResult, null, 2));
-      throw new Error("Transacción rechazada por el Smart Contract.");
-    }
-
-    let txStatus = submitRes.status;
-    let getTxRes;
-    let intentos = 0; // 🚀 Evitamos el bucle infinito
-
-    // Esperamos máximo 30 segundos (15 intentos x 2s)
-    while ((txStatus === "PENDING" || txStatus === "NOT_FOUND") && intentos < 15) {
-      console.log(`[NFT] ⏳ Esperando confirmación de la blockchain... (Intento ${intentos + 1}/15)`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      getTxRes = await server.getTransaction(submitRes.hash);
-      txStatus = getTxRes.status.toUpperCase();
-      intentos++;
-    }
-
-    if (txStatus === "SUCCESS") {
-      console.log(`[NFT] ✅ ¡ÉXITO TOTAL! Hash: ${submitRes.hash}\n`);
-      return { success: true, hash: submitRes.hash };
-    } else {
-      console.error(`[NFT] ❌ Falló o Caducó. Estado final: ${txStatus}\n`);
-      throw new Error(`La red devolvió estado: ${txStatus}`);
-    }
+    return { success: true, hash: submitRes.hash };
 
   } catch (error) {
-    console.error("❌ [NFT ERROR CRÍTICO]", error?.response?.data || error.message);
+    console.error(`[DEBUG] 💥 Error Mint:`, error.message);
     return { success: false, error: error.message };
   }
-} // 👈 AQUÍ FALTABA ESTA LLAVE DE CIERRE.
+}
 
 // ─────────────────────────────────────────────
-// Endpoints API
+// OTROS ENDPOINTS
 // ─────────────────────────────────────────────
 
-// 1. Para la rueda visual del Frontend
 app.post("/api/calculate-score", (req, res) => {
-  const { address, deposits } = req.body;
-  if (!address || !Array.isArray(deposits)) return res.status(400).json({ error: "Datos inválidos" });
-
+  const { deposits } = req.body;
   const wMean = weightedMean(deposits);
   const mad = meanAbsoluteDeviation(deposits);
-  const { score, tier, tierName } = computeScoreAndTier(wMean, mad, deposits.length);
-
-  return res.json({ address, weightedMean: wMean, mad, score, tier, tierName });
+  res.json(computeScoreAndTier(wMean, mad, (deposits || []).length));
 });
 
-// 2. Para el botón de "Reclamar NFT"
 app.post('/api/evaluate-and-mint', async (req, res) => {
   const { userAddress, deposits } = req.body;
-
-  if (!userAddress || !deposits) return res.status(400).json({ error: "Faltan datos" });
-
   const wMean = weightedMean(deposits);
   const mad = meanAbsoluteDeviation(deposits);
-  const { score, tier, tierName } = computeScoreAndTier(wMean, mad, deposits.length);
+  const { tier, tierName } = computeScoreAndTier(wMean, mad, (deposits || []).length);
   
-  // Condición: Nivel 1 (Plata) o superior
   if (tier >= 1) {
     const mintResult = await mintNftOnChain(userAddress, tier);
-    
-    if (mintResult.success) {
-      return res.json({ message: `¡Felicidades! SBT Nivel ${tierName} minteado.`, txHash: mintResult.hash, status: "minted" });
-    } else {
-      return res.status(500).json({ error: "Fallo al mintear en la blockchain", details: mintResult.error });
-    }
-  } else {
-    return res.json({ message: `Aún eres nivel Bronce. Necesitas más score.`, status: "pending" });
+    if (mintResult.success) return res.json({ txHash: mintResult.hash, status: "minted" });
   }
+  res.json({ message: "Nivel insuficiente", status: "pending" });
 });
 
-app.listen(PORT, () => { console.log(`🚀 Motor de Riesgo corriendo en http://localhost:${PORT}`); });
+app.listen(PORT, () => { 
+  console.log(`\n🚀 SERVIDOR VÍNCULO ACTIVO EN PUERTO ${PORT}`);
+});
